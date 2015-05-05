@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+access_token
+client.secret
+data
+python-instagram
