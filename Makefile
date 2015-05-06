@@ -1,3 +1,3 @@
 setup:
-	if [ ! -d "python-instagram" ]; then git clone git@github.com:Instagram/python-instagram.git; fi
-	if ! python -c "import jsonpickle"; then sudo pip install jsonpickle; fi
+	for pkg in "instagram" "jsonpickle" "PyRSS2Gen" "jinja2"; do \
+	  if ! python -c "import $$pkg"; then sudo pip install $$pkg; fi; done
