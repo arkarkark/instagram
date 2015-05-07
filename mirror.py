@@ -1,12 +1,16 @@
 #!/usr/bin/python
 
+"""Use the instagram API to mirror all the posts of a given user.
+Also make an rss feed of their most recent posts."""
+
 import BaseHTTPServer
 import PyRSS2Gen
 import argparse
+import codecs
 import datetime
-import instagram # pip install python-instagram
+import instagram
 import json
-import jsonpickle # pip install jsonpickle
+import jsonpickle
 import logging
 import os
 import subprocess
@@ -14,8 +18,11 @@ import urllib
 import urlparse
 import jinja2
 
-jinja_env = jinja2.Environment(
-  loader=jinja2.PackageLoader('mirror', 'templates'),
+import style
+import timedelta_to_string
+
+jinja_env = jinja2.Environment( # pylint: disable=invalid-name
+    loader=jinja2.PackageLoader('mirror', 'templates'),
 )
 
 def ParseArgs():
@@ -62,8 +69,13 @@ def StoreMedia(dirname, recent_media):
   """Store each media item in dirname."""
   for media in recent_media:
     print media.id + ((media.caption and (" " + media.caption.text)) or "")
+
     filename = os.path.join(dirname, media.id + ".json")
     open(filename, "w").write(PrettyJson(jsonpickle.encode(media)))
+
+    filename = os.path.join(dirname, media.id + ".html")
+    codecs.open(filename, "w", "utf-8").write(GenerateItemHtml(media))
+
     url = media.get_standard_resolution_url()
     extension = os.path.splitext(url)[1] or ".bin"
     filename = os.path.join(dirname, media.id + extension)
@@ -83,9 +95,6 @@ def GenerateRss(filename, user, recent_media):
 
 def GenerateRssItem(item):
   """Make an rss item from a media object."""
-  x = PrettyJson(jsonpickle.encode(item))
-  if "Wheee" in x:
-    print x
   title = [item.user.username]
   if item.caption:
     title.append(item.caption.text)
@@ -99,7 +108,11 @@ def GenerateRssItem(item):
 
 def GenerateItemHtml(item):
   """Turn an media item into html."""
-  return jinja_env.get_template("item.html").render(item=item)
+  return jinja_env.get_template("item.html").render( # pylint: disable=no-member
+      item=item,
+      style=style,
+      HowLongAgo=timedelta_to_string.HowLongAgo
+  )
 
 def GetItems(api, username):
   """Get all the items for a username."""
@@ -122,6 +135,7 @@ def GetItems(api, username):
 
 
 def Mirror(api):
+  """Mirror users using this api object."""
   log.info("I'm going to mirror now!")
   for user in args.user:
     GetItems(api, user)
@@ -142,7 +156,8 @@ def InstagramAuthenticate(callback):
   if access_token:
     log.info("re using access token from disk")
 
-    callback(instagram.client.InstagramAPI(client_id=client_id, client_secret=secret, access_token=access_token))
+    callback(instagram.client.InstagramAPI(
+        client_id=client_id, client_secret=secret, access_token=access_token))
   else:
     log.info("getting access token via web browser")
 

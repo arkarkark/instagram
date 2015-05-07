@@ -1,14 +1,77 @@
-<table>
+<table style="{{style.table}}" summary="instagram post">
+  {# image #}
   <tr>
     <th>
-      <img src="{{item.get_standard_resolution_url()}}" alt="">
+      <a href="{{item.link}}"><img src="{{item.get_standard_resolution_url()}}" alt=""></a>
     </th>
   </tr>
+  {# who/when/what #}
   <tr>
-    <td>
-      <img src="{{item.user.profile_picture}}" alt="">
-      <div>{{item.user.username}}</div>
-      <div>{{item.user.full_name}}</div>
+    <td style="{{style.td}}">
+      <img style="{{style.profile_img}}" src="{{item.user.profile_picture}}" alt="">
+      <div><a style="{{style.user_link}}" href="{{style.user_url(item.user.username)}}">{{item.user.username}}</a></div>
+      <div><span style="{{style.time_text}}">{{HowLongAgo(item.created_time) | capitalize}} Ago</span></div>
+      <div><span style="{{style.caption_text}}">{{item.caption.text}}</span></div>
     </td>
   </tr>
+  {# maps #}
+  {% if item.location and style.map_api_key %}
+  <tr>
+    <td style="{{style.td}}">
+      <table summary="maps">
+        <tr>
+          <td rowspan=2>
+            {{style.map_html(item.location.point.latitude, item.location.point.longitude)}}
+          </td>
+          <td>
+            {{style.streetview_html(item.location.point.latitude, item.location.point.longitude, 0)}}
+          </td>
+          <td>
+            {{style.streetview_html(item.location.point.latitude, item.location.point.longitude, 90)}}
+          </td>
+        </tr>
+        <tr>
+          <td>
+            {{style.streetview_html(item.location.point.latitude, item.location.point.longitude, 180)}}
+          </td>
+          <td>
+            {{style.streetview_html(item.location.point.latitude, item.location.point.longitude, 270)}}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  {% endif %}
+  {# likes #}
+  {% if item.likes|count > 0 %}
+  <tr>
+    <td style="{{style.td}}">
+      {{style.heart_html}}
+      {% for like in item.likes %}
+      {% if not loop.first %}
+        {% if loop.last %}
+        and
+        {% else %}
+        ,
+        {% endif %}
+      {% endif %}
+      <a style="{{style.like_user_text}}" href="{{style.user_url(like.username)}}">{{like.username}}</a>
+      {% endfor %}
+      <span style="color: #aaa">{% if item.likes|count == 1 %}likes{% else %}like{% endif %} this.</span>
+    </td>
+  </tr>
+  {% endif %}
+  {# comments #}
+  {% if item.comments|count > 0 %}
+  <tr>
+    <td style="{{style.td}}">
+      {% for comment in item.comments %}
+      {% if not loop.first %}<br clear="all">{% endif %}
+      <img style="{{style.comment_profile_img}}" src="{{comment.user.profile_picture}}" alt="">
+      <div><a style="{{style.comment_user_link}}" href="{{style.user_url(comment.user.username)}}">{{comment.user.username}}</a></div>
+      <div style="{{style.comment_text}}">{{comment.text}}</div>
+      {% endfor %}
+    </td>
+  </tr>
+  {% endif %}
 </table>
