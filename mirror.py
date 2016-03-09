@@ -97,7 +97,7 @@ def GenerateRssItem(item):
   """Make an rss item from a media object."""
 
   if item.caption:
-    title = str(item.caption)[0:80]
+    title = str(item.caption)[0:80].replace("Comment: ", "")
   else:
     title = item.user.username
   return PyRSS2Gen.RSSItem(
