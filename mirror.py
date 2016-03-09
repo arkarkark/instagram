@@ -127,7 +127,11 @@ def GetItems(api, username):
     next_ = None
     rss_items = []
     while True:
-      recent_media, next_ = api.user_recent_media(user_id=user.id, count=100, with_next_url=next_)
+      try:
+        recent_media, next_ = api.user_recent_media(user_id=user.id, count=100, with_next_url=next_)
+      except instagram.InstagramAPIError as api_error:
+        log.error("%s: %s", username, api_error)
+        return
       rss_items.extend(recent_media)
       StoreMedia(dirname, recent_media)
       if not args.all or not next_:
