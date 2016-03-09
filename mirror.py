@@ -68,8 +68,6 @@ def PrettyJson(j):
 def StoreMedia(dirname, recent_media):
   """Store each media item in dirname."""
   for media in recent_media:
-    print media.id + ((media.caption and (" " + media.caption.text)) or "")
-
     filename = os.path.join(dirname, media.id + ".json")
     open(filename, "w").write(PrettyJson(jsonpickle.encode(media)))
 
@@ -80,38 +78,42 @@ def StoreMedia(dirname, recent_media):
     extension = os.path.splitext(url)[1] or ".bin"
     filename = os.path.join(dirname, media.id + extension)
     if not os.path.exists(filename):
+      print media.id + ((media.caption and (" " + media.caption.text)) or "")
       open(filename, "w").write(urllib.urlopen(url).read())
 
 def GenerateRss(filename, user, recent_media):
   """Generate an rss feed for this user."""
   rss = PyRSS2Gen.RSS2(
-      title=user.full_name,
-      link="https://instagram.com/%s" % user.username,
-      description="Instagram RSS feed for %s (%s)" % (user.username, user.full_name),
-      lastBuildDate=datetime.datetime.now(),
-      items=[GenerateRssItem(item) for item in recent_media])
+    title=user.full_name,
+    link="https://instagram.com/%s" % user.username,
+    description="Instagram RSS feed for %s (%s)" % (user.username, user.full_name),
+    lastBuildDate=datetime.datetime.now(),
+    items=[GenerateRssItem(item) for item in recent_media]
+  )
 
   rss.write_xml(open(filename, "w"))
 
 def GenerateRssItem(item):
   """Make an rss item from a media object."""
-  title = [item.user.username]
+
   if item.caption:
-    title.append(item.caption.text)
+    title = str(item.caption)[0:80]
+  else:
+    title = item.user.username
   return PyRSS2Gen.RSSItem(
-      title=":".join(title),
-      link=item.link,
-      description=GenerateItemHtml(item),
-      guid=item.id,
-      pubDate=item.created_time or datetime.datetime().now()
+    title=title,
+    link=item.link,
+    description=GenerateItemHtml(item),
+    guid=item.id,
+    pubDate=item.created_time or datetime.datetime().now()
   )
 
 def GenerateItemHtml(item):
   """Turn an media item into html."""
   return jinja_env.get_template("item.html").render( # pylint: disable=no-member
-      item=item,
-      style=style,
-      HowLongAgo=timedelta_to_string.HowLongAgo
+    item=item,
+    style=style,
+    HowLongAgo=timedelta_to_string.HowLongAgo
   )
 
 def GetItems(api, username):
@@ -157,7 +159,7 @@ def InstagramAuthenticate(callback):
     log.info("re using access token from disk")
 
     callback(instagram.client.InstagramAPI(
-        client_id=client_id, client_secret=secret, access_token=access_token))
+      client_id=client_id, client_secret=secret, access_token=access_token))
   else:
     log.info("getting access token via web browser")
 
@@ -175,7 +177,11 @@ def InstagramAuthenticate(callback):
       access_token, user_info = api.exchange_code_for_access_token(code)
       log.info("user_info: %r", user_info)
       open("access_token", "w").write(access_token)
-      callback(instagram.client.InstagramAPI(client_id=client_id, client_secret=secret, access_token=access_token))
+      callback(instagram.client.InstagramAPI(
+        client_id=client_id,
+        client_secret=secret,
+        access_token=access_token
+      ))
 
     class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
       """Simple http server to do the oauth dance."""
