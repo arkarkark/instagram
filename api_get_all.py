@@ -17,8 +17,10 @@ NOTE the -- and all the curl arguments come after that...
 ```
 for fil in out*.json; do wgrep -mq "$.data.user.edge_follow.edges[*].node.username" $fil; done |
 while read un; do if [ ! -z "$un" ]; then
-  # TODO add check to see if feed works...
-  open "https://feedly.com/i/subscription/feed/http://feeds.wtwf.com/public/data/instagram/feed/$un";
+  if wget -O /tmp/$$.wget "https://www.instagram.com/$un/media/" && [ "$(wc -c </tmp/$$.wget)" -ge 99 ]; then
+    open "https://feedly.com/i/subscription/feed/http://feeds.wtwf.com/public/data/instagram/feed/$un";
+    open "https://www.instagram.com/$un/"
+  fi
 fi; done
 ```
 
@@ -92,7 +94,7 @@ def Run(url, curl_args=None, file_num=0):
   if curl_args is None:
     curl_args = []
 
-  output = 'out%d.json' % file_num
+  output = 'out%02d.json' % file_num
   cmd = ['curl', '-o', output, url] + curl_args
   subprocess.call(cmd)
 
@@ -100,7 +102,7 @@ def Run(url, curl_args=None, file_num=0):
   end_cursor = None
   try:
     end_cursor = result["data"]["user"]["edge_follow"]["page_info"]["end_cursor"]
-  except KeyError:
+  except (KeyError, TypeError):
     print "no more"
 
   if end_cursor:
